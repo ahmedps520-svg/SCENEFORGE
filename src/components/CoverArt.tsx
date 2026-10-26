@@ -152,8 +152,10 @@ export function CoverArt({ seed, genres, productionType, className }: { seed: nu
 /** A project's cover: the uploaded image, or its generated poster art. */
 export function ProjectCover({ project, className, variant = 'thumb' }: { project: Pick<Project, 'coverAssetId' | 'coverSeed' | 'genres' | 'productionType' | 'title'>; className?: string; variant?: 'thumb' | 'full' }) {
   const generated = <CoverArt seed={project.coverSeed} genres={project.genres} productionType={project.productionType} className="absolute inset-0" />;
+  // Callers may position the cover themselves (e.g. `absolute inset-0`); only default to `relative`.
+  const positioned = /\b(absolute|fixed|sticky)\b/.test(className ?? '');
   return (
-    <div className={cn('relative overflow-hidden bg-black', className)}>
+    <div className={cn(!positioned && 'relative', 'overflow-hidden bg-black', className)}>
       {project.coverAssetId ? (
         <AssetImage assetId={project.coverAssetId} alt={`${project.title} cover`} variant={variant} className="absolute inset-0 size-full" fallback={generated} />
       ) : (
