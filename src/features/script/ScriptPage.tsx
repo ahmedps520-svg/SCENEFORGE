@@ -164,22 +164,29 @@ function ScriptWorkspace({ project, script, scripts, openAssistant }: { project:
     setParams(next, { replace: true });
   }, [sceneParam]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ⌘F / ⌘S also work when the caret isn't in the page.
+  // ⌘F / ⌘S / undo / redo also work when the caret isn't in the page.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (!(e.metaKey || e.ctrlKey) || e.altKey) return;
+      if (e.defaultPrevented || !(e.metaKey || e.ctrlKey) || e.altKey) return;
       const k = e.key.toLowerCase();
+      const t = e.target as HTMLElement | null;
+      const inField = !!t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable);
+      const inDialog = !!t?.closest('[role="dialog"]');
       if (k === 'f') {
         e.preventDefault();
         setFindOpen(true);
       } else if (k === 's') {
         e.preventDefault();
         setDialog('saveVersion');
+      } else if ((k === 'z' || k === 'y') && !inField && !inDialog) {
+        e.preventDefault();
+        if (k === 'y' || e.shiftKey) editor.redo();
+        else editor.undo();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [editor.undo, editor.redo]);
 
   const switchDraft = useCallback(
     async (id: string) => {

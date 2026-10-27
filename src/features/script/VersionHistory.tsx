@@ -134,9 +134,9 @@ export function VersionHistory({
                   ) : (
                     <>
                       <span className="text-muted">Since this version:</span>
-                      <Badge tone="success">{summary.added} added</Badge>
-                      <Badge tone="info">{summary.changed} changed</Badge>
-                      <Badge tone="danger">{summary.removed} removed</Badge>
+                      {summary.added > 0 && <Badge tone="success">{summary.added} added</Badge>}
+                      {summary.changed > 0 && <Badge tone="info">{summary.changed} changed</Badge>}
+                      {summary.removed > 0 && <Badge tone="danger">{summary.removed} removed</Badge>}
                     </>
                   )}
                 </div>

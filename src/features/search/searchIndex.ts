@@ -114,6 +114,8 @@ export function useSearchIndex(projectId: string | undefined, enabled: boolean):
       let sceneId: string | undefined;
       draft.elements.forEach((el, i) => {
         if (el.type === 'scene' && el.sceneId) sceneId = el.sceneId;
+        // Headings and character cues are already covered by the Scenes and Characters groups.
+        if (el.type === 'scene' || el.type === 'character') return;
         const text = displayText(el);
         if (!text) return;
         const scene = sceneId ? sceneById.get(sceneId) : undefined;

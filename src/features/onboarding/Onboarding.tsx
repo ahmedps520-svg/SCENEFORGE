@@ -201,7 +201,7 @@ function Choose({ onBack, finish, name }: { onBack: () => void; finish: (to: str
       key: 'sample',
       icon: <Sparkles className="size-5" />,
       title: 'Explore a sample film',
-      body: 'A short film mid pre-production. See how the script, characters, scenes, storyboards and shots connect. Remove it whenever you like.',
+      body: 'A short film in the middle of its shoot. See how the script, characters, scenes, storyboards and shots connect. Remove it whenever you like.',
       run: () => sample.launch(),
     },
     {

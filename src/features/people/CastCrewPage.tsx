@@ -1,5 +1,5 @@
 import { CalendarSearch, ChevronLeft, ChevronRight, Lock, Mail, Phone, Plus, Search, UserRound } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useWorkspace } from '@/app/WorkspaceLayout';
 import { Avatar, Badge, Button, cn, EmptyState, Field, IconButton, Input, Loading, PageContainer, PageHeader, Section, Segmented, Select, Tabs, Tip, toastError } from '@/components/ui';
@@ -339,6 +339,11 @@ function Availability({ data, onOpen }: { data: ProjectData; onOpen: (id: string
   const { people, characters, events, scenes, locations } = data;
   const ctx = useMemo(() => buildScheduleContext({ scenes, characters, people, locations }), [scenes, characters, people, locations]);
   const days = monthDays(anchor);
+  const todayRef = useRef<HTMLTableCellElement>(null);
+  useEffect(() => {
+    // Bring today's column into view when the month doesn't fit the screen.
+    todayRef.current?.scrollIntoView({ block: 'nearest', inline: 'center' });
+  }, [anchor]);
   const playing = new Set(characters.map((c) => c.actorId).filter(Boolean));
   const rows = people.filter((p) => who === 'all' || isCast(p, playing.has(p.id)));
   const filmingByDate = new Map<string, number>();
@@ -383,11 +388,11 @@ function Availability({ data, onOpen }: { data: ProjectData; onOpen: (id: string
             <table className="border-separate border-spacing-0 text-[11px]">
               <thead>
                 <tr>
-                  <th className="sticky left-0 z-10 min-w-[160px] border-b border-r border-line bg-panel px-3 py-2 text-left">
+                  <th className="sticky left-0 z-10 min-w-[136px] border-b border-r border-line bg-panel px-3 py-2 text-left">
                     <span className="eyebrow">Person</span>
                   </th>
                   {days.map((d) => (
-                    <th key={d} className={cn('w-8 min-w-8 border-b border-line bg-panel px-0 py-1 font-normal', d === today && 'bg-accent-soft')}>
+                    <th key={d} ref={d === today ? todayRef : undefined} className={cn('w-[26px] min-w-[26px] border-b border-line bg-panel px-0 py-1 font-normal', d === today && 'bg-accent-soft')}>
                       <div className="font-mono text-[9.5px] uppercase text-faint">{weekdayShort(d).slice(0, 2)}</div>
                       <div className={cn('font-mono text-[11px]', d === today ? 'text-accent' : 'text-muted')}>{dayNumber(d)}</div>
                       <div className="mx-auto mt-0.5 h-1 w-4 rounded-full" style={{ background: filmingByDate.has(d) ? 'var(--c-accent)' : 'transparent' }} title={filmingByDate.has(d) ? 'Filming day' : undefined} />
@@ -399,7 +404,7 @@ function Availability({ data, onOpen }: { data: ProjectData; onOpen: (id: string
                 {rows.map((p) => (
                   <tr key={p.id}>
                     <th className="sticky left-0 z-10 border-b border-r border-line bg-surface px-3 py-1 text-left font-normal">
-                      <button type="button" onClick={() => onOpen(p.id)} className="block max-w-[170px] truncate text-[12.5px] text-ink hover:text-accent">
+                      <button type="button" onClick={() => onOpen(p.id)} className="block max-w-[150px] truncate text-[12.5px] text-ink hover:text-accent">
                         {p.name}
                       </button>
                     </th>
@@ -407,7 +412,7 @@ function Availability({ data, onOpen }: { data: ProjectData; onOpen: (id: string
                       const off = p.unavailableDates.includes(d);
                       const needed = neededByDate.get(d)?.has(p.id) ?? false;
                       return (
-                        <td key={d} className="border-b border-line p-0.5">
+                        <td key={d} className="border-b border-line p-[1px]">
                           <button
                             type="button"
                             onClick={() => void toggle(p, d)}
