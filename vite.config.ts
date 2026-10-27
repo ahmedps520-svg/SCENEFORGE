@@ -18,8 +18,6 @@ export default defineConfig({
         manualChunks: {
           react: ['react', 'react-dom', 'react-router-dom'],
           data: ['dexie', 'dexie-react-hooks'],
-          pdf: ['jspdf'],
-          ai: ['@anthropic-ai/sdk'],
         },
       },
     },

@@ -35,7 +35,7 @@ const ElementRow = memo(function ElementRow({
           <span>PAGE {breakPage}</span>
         </div>
       )}
-      <div className={cn('sf-row', `sf-${el.type}`)} data-label={elementLabel(el.type)} data-el={el.id}>
+      <div className={cn('sf-row', `sf-${el.type}`)} data-el={el.id}>
         {el.type === 'scene' && showNumbers && number && (
           <>
             <span className="sf-num sf-num-l" aria-hidden>
@@ -108,7 +108,7 @@ interface ChunkProps {
 const Chunk = memo(
   function Chunk({ els, numbers, breaks, highlights, showNumbers, handlers }: ChunkProps) {
     return (
-      <>
+      <div className="sf-chunk">
         {els.map((el) => (
           <ElementRow
             key={el.id}
@@ -120,7 +120,7 @@ const Chunk = memo(
             handlers={handlers}
           />
         ))}
-      </>
+      </div>
     );
   },
   (a, b) => {
@@ -140,6 +140,7 @@ export const Editor = memo(function Editor({
   suggestions,
   acIndex,
   focusedEl,
+  hasFocus,
   getTextarea,
   acceptSuggestion,
   handlers,
@@ -154,6 +155,7 @@ export const Editor = memo(function Editor({
   suggestions: Suggestion[];
   acIndex: number;
   focusedEl?: ScriptElement;
+  hasFocus: boolean;
   getTextarea: (id: string) => HTMLTextAreaElement | undefined;
   acceptSuggestion: (idx: number, s: Suggestion) => string;
   handlers: Handlers;
@@ -166,6 +168,7 @@ export const Editor = memo(function Editor({
 }) {
   const colRef = useRef<HTMLDivElement>(null);
   const [acPos, setAcPos] = useState<{ top: number; left: number } | null>(null);
+  const [typeTop, setTypeTop] = useState<number | null>(null);
   const isEmpty = elements.length === 1 && !elements[0].text;
 
   const chunks = useMemo(() => {
@@ -174,19 +177,26 @@ export const Editor = memo(function Editor({
     return out;
   }, [elements]);
 
+  // Position the autocomplete list and the element-type label next to the line being edited.
   useLayoutEffect(() => {
-    if (!suggestions.length || !focusedEl || !colRef.current) {
+    const ta = focusedEl && hasFocus ? getTextarea(focusedEl.id) : undefined;
+    if (!ta || !colRef.current) {
+      setAcPos((p) => (p ? null : p));
+      setTypeTop((t) => (t === null ? t : null));
+      return;
+    }
+    const col = colRef.current.getBoundingClientRect();
+    const r = ta.getBoundingClientRect();
+    const tt = r.top - col.top;
+    setTypeTop((t) => (t === tt ? t : tt));
+    if (!suggestions.length) {
       setAcPos((p) => (p ? null : p));
       return;
     }
-    const ta = getTextarea(focusedEl.id);
-    if (!ta) return;
-    const col = colRef.current.getBoundingClientRect();
-    const r = ta.getBoundingClientRect();
     const top = r.bottom - col.top + 4;
     const left = Math.max(0, r.left - col.left);
     setAcPos((p) => (p && p.top === top && p.left === left ? p : { top, left }));
-  }, [suggestions, focusedEl, getTextarea]);
+  }, [suggestions, focusedEl, hasFocus, getTextarea]);
 
   return (
     <div ref={scrollRef} className="h-full overflow-y-auto overscroll-contain" id="sf-scroll">
@@ -196,6 +206,11 @@ export const Editor = memo(function Editor({
             {chunks.map((els, i) => (
               <Chunk key={i} els={els} numbers={numbers} breaks={breaks} highlights={highlights} showNumbers={showSceneNumbers} handlers={handlers} />
             ))}
+            {typeTop !== null && focusedEl && (
+              <span className="sf-type" style={{ top: typeTop }} aria-hidden>
+                {elementLabel(focusedEl.type)}
+              </span>
+            )}
             {acPos && suggestions.length > 0 && focusedEl && (
               <div
                 role="listbox"

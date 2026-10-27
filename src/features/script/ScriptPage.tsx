@@ -450,6 +450,7 @@ function ScriptWorkspace({ project, script, scripts, openAssistant }: { project:
             suggestions={editor.suggestions}
             acIndex={editor.acIndex}
             focusedEl={editor.focusedEl}
+            hasFocus={editor.hasFocus}
             getTextarea={editor.getTextarea}
             acceptSuggestion={editor.acceptSuggestion}
             handlers={editor.handlers}

@@ -32,7 +32,7 @@
 @media (max-width: 640px) {
   .sf-paper {
     font-size: 14px;
-    --sf-pad: 18px;
+    --sf-pad: 22px;
     --s: 0.45;
   }
   .sf-sheet {
@@ -52,6 +52,14 @@
 .sf-row {
   position: relative;
 }
+/* Off-screen runs of rows skip layout and paint entirely. */
+.sf-chunk {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 2400px;
+  /* Paint containment clips to the box, so it spans the side margins where scene numbers live. */
+  margin: 0 calc(-1 * var(--sf-pad));
+  padding: 0 var(--sf-pad);
+}
 .sf-scene {
   margin-top: 2.9em;
   font-weight: 700;
@@ -63,8 +71,8 @@
 .sf-centered {
   margin-top: 1.45em;
 }
-.sf-col > .sf-row:first-child,
-.sf-col > .sf-break + .sf-row,
+.sf-col > .sf-chunk:first-child > .sf-row:first-child,
+.sf-chunk > .sf-break + .sf-row,
 .sf-static > .sf-row:first-child {
   margin-top: 0;
 }
@@ -108,22 +116,16 @@
   color: var(--sf-faint);
 }
 /* Element type shown in the margin beside the line being edited. */
-.sf-row::before {
-  content: attr(data-label);
+.sf-type {
   position: absolute;
   right: calc(100% + 4.2em);
-  top: 0.35em;
   font: 500 9.5px/1.2 var(--font-mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--sf-faint);
-  opacity: 0;
-  transition: opacity 0.15s;
   white-space: nowrap;
   pointer-events: none;
-}
-.sf-row:focus-within::before {
-  opacity: 1;
+  margin-top: 0.35em;
 }
 .sf-num {
   position: absolute;
@@ -139,7 +141,7 @@
   left: calc(100% + 1.4em);
 }
 @media (max-width: 1100px) {
-  .sf-row::before {
+  .sf-type {
     display: none;
   }
 }
@@ -148,10 +150,9 @@
     display: none;
   }
   .sf-num-l {
-    right: auto;
-    left: -0.2em;
-    top: -1.35em;
-    font-size: 10px;
+    right: calc(100% + 3px);
+    top: 0.35em;
+    font-size: 9px;
     font-family: var(--font-mono);
   }
 }
