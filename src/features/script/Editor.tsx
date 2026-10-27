@@ -1,8 +1,8 @@
-import { memo, useLayoutEffect, useRef, useState, type RefObject } from 'react';
+import { memo, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { elementLabel } from '@/lib/constants';
 import type { ScriptElement } from '@/lib/types';
 import { cn } from '@/components/ui';
-import { PLACEHOLDER } from './ops';
+import { PLACEHOLDER, type Suggestion } from './ops';
 import type { ScriptEditorApi } from './useScriptEditor';
 
 export interface Highlight {
@@ -90,8 +90,59 @@ function HighlightLayer({ text, highlights }: { text: string; highlights: Highli
   );
 }
 
-export function Editor({
-  editor,
+const CHUNK = 48;
+
+interface ChunkProps {
+  els: ScriptElement[];
+  numbers: Map<string, string>;
+  breaks: Map<string, number>;
+  highlights: Map<string, Highlight[]> | null;
+  showNumbers: boolean;
+  handlers: Handlers;
+}
+
+/**
+ * A run of consecutive rows. Typing changes one element, so only the chunk
+ * holding it re-renders — long scripts stay responsive.
+ */
+const Chunk = memo(
+  function Chunk({ els, numbers, breaks, highlights, showNumbers, handlers }: ChunkProps) {
+    return (
+      <>
+        {els.map((el) => (
+          <ElementRow
+            key={el.id}
+            el={el}
+            number={numbers.get(el.id)}
+            breakPage={breaks.get(el.id)}
+            showNumbers={showNumbers}
+            highlights={highlights?.get(el.id)}
+            handlers={handlers}
+          />
+        ))}
+      </>
+    );
+  },
+  (a, b) => {
+    if (a.showNumbers !== b.showNumbers || a.handlers !== b.handlers || a.els.length !== b.els.length) return false;
+    for (let i = 0; i < a.els.length; i++) {
+      const x = a.els[i];
+      if (x !== b.els[i]) return false;
+      if (a.numbers.get(x.id) !== b.numbers.get(x.id) || a.breaks.get(x.id) !== b.breaks.get(x.id)) return false;
+      if (a.highlights?.get(x.id) !== b.highlights?.get(x.id)) return false;
+    }
+    return true;
+  },
+);
+
+export const Editor = memo(function Editor({
+  elements,
+  suggestions,
+  acIndex,
+  focusedEl,
+  getTextarea,
+  acceptSuggestion,
+  handlers,
   paper,
   showSceneNumbers,
   numbers,
@@ -99,7 +150,13 @@ export function Editor({
   highlights,
   scrollRef,
 }: {
-  editor: ScriptEditorApi;
+  elements: ScriptElement[];
+  suggestions: Suggestion[];
+  acIndex: number;
+  focusedEl?: ScriptElement;
+  getTextarea: (id: string) => HTMLTextAreaElement | undefined;
+  acceptSuggestion: (idx: number, s: Suggestion) => string;
+  handlers: Handlers;
   paper: 'dark' | 'light';
   showSceneNumbers: boolean;
   numbers: Map<string, string>;
@@ -109,36 +166,35 @@ export function Editor({
 }) {
   const colRef = useRef<HTMLDivElement>(null);
   const [acPos, setAcPos] = useState<{ top: number; left: number } | null>(null);
-  const { elements, suggestions, acIndex, focusedEl } = editor;
   const isEmpty = elements.length === 1 && !elements[0].text;
+
+  const chunks = useMemo(() => {
+    const out: ScriptElement[][] = [];
+    for (let i = 0; i < elements.length; i += CHUNK) out.push(elements.slice(i, i + CHUNK));
+    return out;
+  }, [elements]);
 
   useLayoutEffect(() => {
     if (!suggestions.length || !focusedEl || !colRef.current) {
-      setAcPos(null);
+      setAcPos((p) => (p ? null : p));
       return;
     }
-    const ta = editor.getTextarea(focusedEl.id);
+    const ta = getTextarea(focusedEl.id);
     if (!ta) return;
     const col = colRef.current.getBoundingClientRect();
     const r = ta.getBoundingClientRect();
-    setAcPos({ top: r.bottom - col.top + 4, left: Math.max(0, r.left - col.left) });
-  }, [suggestions, focusedEl, elements, editor]);
+    const top = r.bottom - col.top + 4;
+    const left = Math.max(0, r.left - col.left);
+    setAcPos((p) => (p && p.top === top && p.left === left ? p : { top, left }));
+  }, [suggestions, focusedEl, getTextarea]);
 
   return (
     <div ref={scrollRef} className="h-full overflow-y-auto overscroll-contain" id="sf-scroll">
       <div className="sf-paper" data-paper={paper} data-empty={isEmpty ? '' : undefined}>
         <div className="sf-sheet">
           <div ref={colRef} className="sf-col">
-            {elements.map((el) => (
-              <ElementRow
-                key={el.id}
-                el={el}
-                number={numbers.get(el.id)}
-                breakPage={breaks.get(el.id)}
-                showNumbers={showSceneNumbers}
-                highlights={highlights?.get(el.id)}
-                handlers={editor.handlers}
-              />
+            {chunks.map((els, i) => (
+              <Chunk key={i} els={els} numbers={numbers} breaks={breaks} highlights={highlights} showNumbers={showSceneNumbers} handlers={handlers} />
             ))}
             {acPos && suggestions.length > 0 && focusedEl && (
               <div
@@ -156,7 +212,7 @@ export function Editor({
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={() => {
                       const idx = elements.findIndex((x) => x.id === focusedEl.id);
-                      if (idx >= 0) editor.acceptSuggestion(idx, s);
+                      if (idx >= 0) acceptSuggestion(idx, s);
                     }}
                     className={cn('flex w-full items-center justify-between gap-4 px-3 py-1.5 text-left text-[13px] text-ink', i === acIndex ? 'bg-hover' : 'hover:bg-hover/60')}
                   >
@@ -173,7 +229,7 @@ export function Editor({
       </div>
     </div>
   );
-}
+});
 
 const KEYS: [string, string][] = [
   ['Enter', 'Next element — action after a heading, dialogue after a character'],

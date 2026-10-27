@@ -352,11 +352,13 @@ function Conversation({
           <>
             <TurnView turn={live.user} projectId={projectId} preview={preview} />
             <div className="space-y-3">
-              {live.text ? <Markdown text={live.text} /> : !live.activity && <Thinking label="Thinking" />}
+              {!live.text && !live.activity && !live.proposals.length && <Thinking label="Thinking" />}
+              <ReplyBody
+                text={live.text}
+                proposals={live.proposals}
+                renderCard={(p) => <ProposalCard key={p.id} projectId={projectId} proposal={p} data={preview} disabled onApply={async () => {}} onDismiss={async () => {}} onUndo={async () => {}} />}
+              />
               {live.activity && <Thinking label={live.activity} />}
-              {live.proposals.map((p) => (
-                <ProposalCard key={p.id} projectId={projectId} proposal={p} data={preview} disabled onApply={async () => {}} onDismiss={async () => {}} onUndo={async () => {}} />
-              ))}
             </div>
           </>
         )}
@@ -434,19 +436,22 @@ function TurnView({
   }
   return (
     <div className="space-y-3">
-      {turn.text && <Markdown text={turn.text} />}
-      {turn.proposals.map((p) => (
-        <ProposalCard
-          key={p.id}
-          projectId={projectId}
-          proposal={p}
-          data={preview}
-          disabled={busy}
-          onApply={() => onApply?.(p) ?? Promise.resolve()}
-          onDismiss={() => onDismiss?.(p) ?? Promise.resolve()}
-          onUndo={() => onUndo?.(p) ?? Promise.resolve()}
-        />
-      ))}
+      <ReplyBody
+        text={turn.text}
+        proposals={turn.proposals}
+        renderCard={(p) => (
+          <ProposalCard
+            key={p.id}
+            projectId={projectId}
+            proposal={p}
+            data={preview}
+            disabled={busy}
+            onApply={() => onApply?.(p) ?? Promise.resolve()}
+            onDismiss={() => onDismiss?.(p) ?? Promise.resolve()}
+            onUndo={() => onUndo?.(p) ?? Promise.resolve()}
+          />
+        )}
+      />
       {turn.notice && <p className="text-[12px] italic text-faint">{turn.notice}</p>}
       {turn.error && (
         <div className="flex items-start gap-2 rounded-sm border border-[color-mix(in_srgb,var(--c-danger)_30%,transparent)] bg-danger-soft px-3 py-2 text-[12.5px] text-danger" role="alert">
@@ -463,3 +468,19 @@ function TurnView({
   );
 }
 
+/** Reply text with each suggestion card placed where the assistant made it. */
+function ReplyBody({ text, proposals, renderCard }: { text: string; proposals: Proposal[]; renderCard: (p: Proposal) => React.ReactNode }) {
+  const parts: React.ReactNode[] = [];
+  let cursor = 0;
+  const anchored = [...proposals].sort((a, b) => (a.textOffset ?? Infinity) - (b.textOffset ?? Infinity));
+  anchored.forEach((p, i) => {
+    const at = Math.min(p.textOffset ?? text.length, text.length);
+    const chunk = text.slice(cursor, at);
+    if (chunk.trim()) parts.push(<Markdown key={`t${i}`} text={chunk} />);
+    cursor = Math.max(cursor, at);
+    parts.push(renderCard(p));
+  });
+  const rest = text.slice(cursor);
+  if (rest.trim()) parts.push(<Markdown key="rest" text={rest} />);
+  return <>{parts}</>;
+}

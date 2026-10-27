@@ -1,4 +1,5 @@
 import { ArrowUpRight, Camera, Clapperboard, Drama, Images, Sparkles, X } from 'lucide-react';
+import { memo } from 'react';
 import { Link } from 'react-router-dom';
 import { ShotStatusBadge } from '@/components/StatusBadges';
 import { AssetImage, AutoText, Button, IconButton, Loading, Select, toastError } from '@/components/ui';
@@ -8,7 +9,7 @@ import { useCharacters, useFrames, useScene, useScenes, useShots } from '@/lib/h
 import { sceneNumbers, shotCodes } from '@/lib/numbering';
 import type { SceneStatus } from '@/lib/types';
 
-export function ContextPanel({
+export const ContextPanel = memo(function ContextPanel({
   projectId,
   sceneId,
   heading,
@@ -172,4 +173,4 @@ export function ContextPanel({
       </div>
     </div>
   );
-}
+});

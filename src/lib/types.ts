@@ -473,6 +473,8 @@ export interface Proposal {
   backupVersionId?: ID;
   /** Field values replaced when an update was applied, so it can be undone. */
   previous?: { table: string; id: ID; values: Record<string, unknown> }[];
+  /** Length of the reply text when this was suggested, so it renders in place. */
+  textOffset?: number;
 }
 
 export interface AssistantTurn {

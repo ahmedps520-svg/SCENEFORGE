@@ -56,6 +56,7 @@ export interface EditorOptions {
 }
 
 const SAVE_DELAY = 800;
+const NO_SUGGESTIONS: Suggestion[] = [];
 const COALESCE_GAP = 1500;
 const COALESCE_RUN = 4000;
 
@@ -611,11 +612,15 @@ export function useScriptEditor(opts: EditorOptions) {
   const allNames = useMemo(() => [...new Set([...opts.knownNames, ...scriptCueNames(deferred)])].sort(), [opts.knownNames, deferred]);
   const allLocations = useMemo(() => headingLocations(deferred, opts.locations), [opts.locations, deferred]);
   const suggestions = useMemo(() => {
-    if (!focusedEl || !hasFocus) return [];
-    if (ac.dismissedKey === `${focusedEl.id}:${focusedEl.text}`) return [];
-    if (focusedEl.type === 'character') return characterSuggestions(focusedEl.text, allNames);
-    if (focusedEl.type === 'scene') return sceneSuggestions(focusedEl.text, allLocations);
-    return [];
+    if (!focusedEl || !hasFocus) return NO_SUGGESTIONS;
+    if (ac.dismissedKey === `${focusedEl.id}:${focusedEl.text}`) return NO_SUGGESTIONS;
+    const list =
+      focusedEl.type === 'character'
+        ? characterSuggestions(focusedEl.text, allNames)
+        : focusedEl.type === 'scene'
+          ? sceneSuggestions(focusedEl.text, allLocations)
+          : NO_SUGGESTIONS;
+    return list.length ? list : NO_SUGGESTIONS;
   }, [focusedEl, hasFocus, ac.dismissedKey, allNames, allLocations]);
   const acIndex = !suggestions.length
     ? -1

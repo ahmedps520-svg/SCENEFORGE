@@ -176,7 +176,7 @@ export async function runAssistantTurn(opts: {
           results.push({ type: 'tool_result', tool_use_id: use.id, is_error: true, content: resolved.error });
           continue;
         }
-        const proposal: Proposal = { id: uid(), kind: use.name, input: resolved.payload, status: 'pending' };
+        const proposal: Proposal = { id: uid(), kind: use.name, input: resolved.payload, status: 'pending', textOffset: text.length };
         proposals.push(proposal);
         callbacks.onProposal(proposal);
         results.push({

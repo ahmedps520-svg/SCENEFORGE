@@ -116,7 +116,8 @@ export function Toaster() {
   return (
     <div
       aria-live="polite"
-      className="pointer-events-none fixed inset-x-0 bottom-0 z-[80] flex flex-col items-center gap-2 p-4 pb-[calc(16px+env(safe-area-inset-bottom))] sm:items-end sm:pb-4 max-md:bottom-14"
+      // Phones: top of the screen, clear of the bottom navigation and text inputs. Larger screens: bottom right.
+      className="pointer-events-none fixed inset-x-0 z-[80] flex flex-col items-center gap-2 p-4 max-md:top-0 max-md:pt-[calc(8px+env(safe-area-inset-top))] md:bottom-0 md:items-end"
     >
       {list.map((t) => (
         <ToastView key={t.id} t={t} />

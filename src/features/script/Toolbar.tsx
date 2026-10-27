@@ -25,11 +25,12 @@ import {
   Upload,
 } from 'lucide-react';
 import { format } from 'date-fns';
+import { memo } from 'react';
 import { cn, IconButton, Menu, MenuItem, MenuLabel, MenuSeparator } from '@/components/ui';
 import { ELEMENT_TYPES, revisionColor } from '@/lib/constants';
 import { formatSeconds } from '@/lib/dates';
 import type { AppSettings, ElementType, Script } from '@/lib/types';
-import type { ScriptEditorApi } from './useScriptEditor';
+import type { SaveState, ScriptEditorApi } from './useScriptEditor';
 
 export interface ToolbarActions {
   switchDraft: (id: string) => void;
@@ -64,15 +65,16 @@ export interface Stats {
   scenes: number;
 }
 
+const NUM = new Intl.NumberFormat();
+
 export function statsLine(s: Stats) {
-  return `${s.pageCount} ${s.pageCount === 1 ? 'page' : 'pages'} · ${s.words.toLocaleString()} words · ~${formatSeconds(s.runtimeSec)} · ${s.scenes} ${s.scenes === 1 ? 'scene' : 'scenes'}`;
+  return `${s.pageCount} ${s.pageCount === 1 ? 'page' : 'pages'} · ${NUM.format(s.words)} words · ~${formatSeconds(s.runtimeSec)} · ${s.scenes} ${s.scenes === 1 ? 'scene' : 'scenes'}`;
 }
 
-function SaveIndicator({ editor }: { editor: ScriptEditorApi }) {
-  const { saveState, saveError, lastSavedAt } = editor;
+function SaveIndicator({ saveState, saveError, lastSavedAt, retry }: { saveState: SaveState; saveError: string | null; lastSavedAt: number; retry: () => void }) {
   if (saveState === 'error') {
     return (
-      <button onClick={editor.retry} className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[12px] text-danger hover:bg-danger-soft" title={saveError ?? 'Save failed'}>
+      <button onClick={retry} className="flex items-center gap-1.5 rounded-sm px-2 py-1 text-[12px] text-danger hover:bg-danger-soft" title={saveError ?? 'Save failed'}>
         <AlertCircle className="size-3.5" /> Not saved · Retry
       </button>
     );
@@ -189,12 +191,22 @@ function ViewMenu({ settings, focusMode, actions }: { settings: AppSettings['edi
   );
 }
 
-export function Toolbar({
+export const Toolbar = memo(function Toolbar({
   scripts,
   script,
   primaryId,
-  editor,
-  stats,
+  focusedType: type,
+  canUndo,
+  canRedo,
+  saveState,
+  saveError,
+  lastSavedAt,
+  undo,
+  redo,
+  retry,
+  setFocusedType,
+  statsFull,
+  statsShort,
   settings,
   focusMode,
   contextOpen,
@@ -203,14 +215,23 @@ export function Toolbar({
   scripts: Script[];
   script: Script;
   primaryId?: string;
-  editor: ScriptEditorApi;
-  stats: Stats;
+  focusedType?: ElementType;
+  canUndo: boolean;
+  canRedo: boolean;
+  saveState: SaveState;
+  saveError: string | null;
+  lastSavedAt: number;
+  undo: () => void;
+  redo: () => void;
+  retry: () => void;
+  setFocusedType: (t: ElementType) => void;
+  statsFull: string;
+  statsShort: string;
   settings: AppSettings['editor'];
   focusMode: boolean;
   contextOpen: boolean;
   actions: ToolbarActions;
 }) {
-  const type = editor.focusedEl?.type;
   return (
     <div className="flex h-11 shrink-0 items-center gap-1 border-b border-line bg-panel px-2 sm:px-3">
       <div className="hidden md:block">
@@ -227,7 +248,7 @@ export function Toolbar({
           aria-label="Element type"
           value={type ?? ''}
           disabled={!type}
-          onChange={(e) => editor.setFocusedType(e.target.value as ElementType)}
+          onChange={(e) => setFocusedType(e.target.value as ElementType)}
           className="input h-7 w-[150px] py-0 pl-2 text-[12.5px]"
         >
           {!type && <option value="">Element</option>}
@@ -237,10 +258,10 @@ export function Toolbar({
             </option>
           ))}
         </select>
-        <IconButton label="Undo (⌘Z)" onClick={editor.undo} disabled={!editor.canUndo}>
+        <IconButton label="Undo (⌘Z)" onClick={undo} disabled={!canUndo}>
           <Undo2 className="size-4" />
         </IconButton>
-        <IconButton label="Redo (⇧⌘Z)" onClick={editor.redo} disabled={!editor.canRedo}>
+        <IconButton label="Redo (⇧⌘Z)" onClick={redo} disabled={!canRedo}>
           <Redo2 className="size-4" />
         </IconButton>
         <span className="mx-1.5 h-5 w-px bg-line" />
@@ -273,11 +294,9 @@ export function Toolbar({
       </div>
 
       <div className="ml-auto flex items-center gap-1">
-        <span className="hidden whitespace-nowrap font-mono text-[11px] text-faint 2xl:inline">{statsLine(stats)}</span>
-        <span className="hidden whitespace-nowrap font-mono text-[11px] text-faint xl:inline 2xl:hidden">
-          {stats.pageCount}pp · ~{formatSeconds(stats.runtimeSec)}
-        </span>
-        <SaveIndicator editor={editor} />
+        <span className="hidden whitespace-nowrap font-mono text-[11px] text-faint 2xl:inline">{statsFull}</span>
+        <span className="hidden whitespace-nowrap font-mono text-[11px] text-faint xl:inline 2xl:hidden">{statsShort}</span>
+        <SaveIndicator saveState={saveState} saveError={saveError} lastSavedAt={lastSavedAt} retry={retry} />
         <div className="hidden items-center md:flex">
           <IconButton label={focusMode ? 'Exit focus mode' : 'Focus mode'} onClick={actions.toggleFocus} active={focusMode}>
             {focusMode ? <Minimize2 className="size-4" /> : <Maximize2 className="size-4" />}
@@ -291,10 +310,10 @@ export function Toolbar({
 
         {/* Mobile controls */}
         <div className="flex items-center md:hidden">
-          <IconButton label="Undo" onClick={editor.undo} disabled={!editor.canUndo}>
+          <IconButton label="Undo" onClick={undo} disabled={!canUndo}>
             <Undo2 className="size-4" />
           </IconButton>
-          <IconButton label="Redo" onClick={editor.redo} disabled={!editor.canRedo}>
+          <IconButton label="Redo" onClick={redo} disabled={!canRedo}>
             <Redo2 className="size-4" />
           </IconButton>
           <Menu
@@ -341,13 +360,13 @@ export function Toolbar({
               Scene numbers
             </MenuItem>
             <MenuSeparator />
-            <MenuLabel>{statsLine(stats)}</MenuLabel>
+            <MenuLabel>{statsFull}</MenuLabel>
           </Menu>
         </div>
       </div>
     </div>
   );
-}
+});
 
 /** Element type chips for touch devices, where Tab and Alt shortcuts aren't available. */
 export function ElementBar({ editor }: { editor: ScriptEditorApi }) {

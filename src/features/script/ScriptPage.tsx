@@ -8,6 +8,7 @@ import { makeCharacter } from '@/lib/data/factories';
 import { titleCase } from '@/lib/data/projects';
 import { createDraft, deleteDraft, renameDraft, restoreVersion, saveScript, saveVersion, setPrimaryDraft, syncScenes } from '@/lib/data/scripts';
 import { updateSettings, useSettings } from '@/lib/data/settings';
+import { formatSeconds } from '@/lib/dates';
 import { downloadText, slug } from '@/lib/download';
 import { useCharacters, useLocations, useScripts } from '@/lib/hooks';
 import { exportScreenplayPdf } from '@/lib/pdf/screenplay';
@@ -70,6 +71,18 @@ function NoDrafts({ project }: { project: Project }) {
   );
 }
 
+/** Keep the previous Map instance when its contents haven't changed, so memoized rows can skip work. */
+function useStableMap<K, V>(map: Map<K, V>): Map<K, V> {
+  const ref = useRef(map);
+  const prev = ref.current;
+  if (prev !== map) {
+    let same = prev.size === map.size;
+    if (same) for (const [k, v] of map) if (prev.get(k) !== v) { same = false; break; }
+    if (!same) ref.current = map;
+  }
+  return ref.current;
+}
+
 type DialogKind = null | 'newDraft' | 'draftSettings' | 'saveVersion' | 'titlePage' | 'exportPdf' | 'import' | 'shortcuts';
 
 function ScriptWorkspace({ project, script, scripts, openAssistant }: { project: Project; script: Script; scripts: Script[]; openAssistant: (f?: AssistantFocus) => void }) {
@@ -117,7 +130,7 @@ function ScriptWorkspace({ project, script, scripts, openAssistant }: { project:
   const deferred = useDeferredValue(editor.elements);
   const pageSize = editorSettings.pageSize;
   const pagination = useMemo(() => paginate(deferred, { pageSize }), [deferred, pageSize]);
-  const breaks = useMemo(() => {
+  const rawBreaks = useMemo(() => {
     const m = new Map<string, number>();
     let last = 1;
     for (const el of deferred) {
@@ -129,9 +142,20 @@ function ScriptWorkspace({ project, script, scripts, openAssistant }: { project:
     }
     return m;
   }, [deferred, pagination]);
-  const numbers = useMemo(() => headingNumbers(deferred), [deferred]);
+  const breaks = useStableMap(rawBreaks);
+  const numbers = useStableMap(useMemo(() => headingNumbers(deferred), [deferred]));
   const lengths = useMemo(() => sceneLengths(deferred, pageSize), [deferred, pageSize]);
-  const outline = useMemo(() => buildOutline(deferred, numbers, lengths), [deferred, numbers, lengths]);
+  const rawOutline = useMemo(() => buildOutline(deferred, numbers, lengths), [deferred, numbers, lengths]);
+  const outlineRef = useRef(rawOutline);
+  const prevOutline = outlineRef.current;
+  if (
+    prevOutline !== rawOutline &&
+    (prevOutline.length !== rawOutline.length ||
+      rawOutline.some((o, i) => o.id !== prevOutline[i].id || o.heading !== prevOutline[i].heading || o.number !== prevOutline[i].number || o.eighths !== prevOutline[i].eighths))
+  ) {
+    outlineRef.current = rawOutline;
+  }
+  const outline = outlineRef.current;
   const stats: Stats = useMemo(() => {
     const has = deferred.some((e) => e.text.trim());
     const pages = has ? pagination.pages.length - 1 + pagination.lastPageLines / pagination.linesPerPage : 0;
@@ -207,6 +231,36 @@ function ScriptWorkspace({ project, script, scripts, openAssistant }: { project:
 
   const run = (fn: () => Promise<unknown>, failure: string) => () => void fn().catch((e) => toastError(e, failure));
 
+  const { focusElement, getTextarea } = editor;
+  const jump = useCallback(
+    (headingId: string) => {
+      focusElement(headingId, getTextarea(headingId)?.value.length ?? 0, undefined, 'start');
+      setMobilePanel(null);
+    },
+    [focusElement, getTextarea],
+  );
+
+  const onAsk = useCallback(
+    (sceneId: string, label: string) => {
+      setMobilePanel(null);
+      openAssistant({ type: 'scene', id: sceneId, label });
+    },
+    [openAssistant],
+  );
+
+  const toggleContext = useCallback(
+    () =>
+      setContextOpen((o) => {
+        try {
+          localStorage.setItem('sceneforge:script-context', o ? '0' : '1');
+        } catch {
+          /* ignore */
+        }
+        return !o;
+      }),
+    [],
+  );
+
   const actions: ToolbarActions = {
     switchDraft: (id) => void switchDraft(id),
     newDraft: () => setDialog('newDraft'),
@@ -267,29 +321,12 @@ function ScriptWorkspace({ project, script, scripts, openAssistant }: { project:
     toggleNumbers: () => void updateSettings({ editor: { ...editorSettings, showSceneNumbers: !editorSettings.showSceneNumbers } }),
     setPageSize: (s) => void updateSettings({ editor: { ...editorSettings, pageSize: s } }),
     toggleFocus: () => setFocusMode((f) => !f),
-    toggleContext: () =>
-      setContextOpen((o) => {
-        try {
-          localStorage.setItem('sceneforge:script-context', o ? '0' : '1');
-        } catch {
-          /* ignore */
-        }
-        return !o;
-      }),
+    toggleContext,
     openOutline: () => setMobilePanel('outline'),
     openContext: () => setMobilePanel('context'),
   };
 
-  const jump = (headingId: string) => {
-    const el = editor.elements.find((e) => e.id === headingId);
-    editor.focusElement(headingId, el?.text.length ?? 0, undefined, 'start');
-    setMobilePanel(null);
-  };
 
-  const onAsk = (sceneId: string, label: string) => {
-    setMobilePanel(null);
-    openAssistant({ type: 'scene', id: sceneId, label });
-  };
 
   const onImport = async (c: ImportChoice) => {
     if (c.mode === 'replace') {
@@ -327,6 +364,17 @@ function ScriptWorkspace({ project, script, scripts, openAssistant }: { project:
     }
   };
 
+  // Stable action identities let the memoized toolbar skip re-rendering while typing.
+  const actionsRef = useRef(actions);
+  actionsRef.current = actions;
+  const stableActions = useMemo(
+    () =>
+      Object.fromEntries(
+        (Object.keys(actions) as (keyof ToolbarActions)[]).map((k) => [k, (...args: unknown[]) => (actionsRef.current[k] as (...a: unknown[]) => void)(...args)]),
+      ) as unknown as ToolbarActions,
+    [], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
   const visibleCues = isPrimary ? unknownCues.filter((c) => !dismissedCues.includes(c)) : [];
   const currentSceneId = currentHeading?.sceneId;
   const contextProps = {
@@ -337,6 +385,7 @@ function ScriptWorkspace({ project, script, scripts, openAssistant }: { project:
     isPrimary,
     onAsk,
   };
+  const outlineStats = statsLine(stats);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -345,12 +394,22 @@ function ScriptWorkspace({ project, script, scripts, openAssistant }: { project:
           scripts={scripts}
           script={script}
           primaryId={project.primaryScriptId}
-          editor={editor}
-          stats={stats}
+          focusedType={editor.focusedEl?.type}
+          canUndo={editor.canUndo}
+          canRedo={editor.canRedo}
+          saveState={editor.saveState}
+          saveError={editor.saveError}
+          lastSavedAt={editor.lastSavedAt}
+          undo={editor.undo}
+          redo={editor.redo}
+          retry={editor.retry}
+          setFocusedType={editor.setFocusedType}
+          statsFull={outlineStats}
+          statsShort={`${stats.pageCount}pp · ~${formatSeconds(stats.runtimeSec)}`}
           settings={editorSettings}
           focusMode={focusMode}
           contextOpen={contextOpen}
-          actions={actions}
+          actions={stableActions}
         />
       ) : null}
       <ElementBar editor={editor} />
@@ -373,7 +432,7 @@ function ScriptWorkspace({ project, script, scripts, openAssistant }: { project:
       <div className="flex min-h-0 flex-1">
         {!focusMode && (
           <aside className="hidden w-60 shrink-0 border-r border-line bg-panel lg:flex">
-            <SceneNavigator outline={outline} currentId={currentHeading?.id} onJump={jump} className="w-full" stats={statsLine(stats)} />
+            <SceneNavigator outline={outline} currentId={currentHeading?.id} onJump={jump} className="w-full" stats={outlineStats} />
           </aside>
         )}
 
@@ -387,7 +446,13 @@ function ScriptWorkspace({ project, script, scripts, openAssistant }: { project:
             </div>
           )}
           <Editor
-            editor={editor}
+            elements={editor.elements}
+            suggestions={editor.suggestions}
+            acIndex={editor.acIndex}
+            focusedEl={editor.focusedEl}
+            getTextarea={editor.getTextarea}
+            acceptSuggestion={editor.acceptSuggestion}
+            handlers={editor.handlers}
             paper={editorSettings.paper}
             showSceneNumbers={editorSettings.showSceneNumbers}
             numbers={numbers}
@@ -414,20 +479,25 @@ function ScriptWorkspace({ project, script, scripts, openAssistant }: { project:
 
         {!focusMode && contextOpen && (
           <aside className="hidden w-80 shrink-0 border-l border-line bg-panel lg:block">
-            <ContextPanel {...contextProps} onClose={actions.toggleContext} />
+            <ContextPanel {...contextProps} onClose={toggleContext} />
           </aside>
         )}
       </div>
 
-      <Sheet open={mobilePanel === 'outline'} onOpenChange={(o) => !o && setMobilePanel(null)} title="Scenes" description={statsLine(stats)}>
+      {mobilePanel === 'outline' && (
+      <Sheet open={mobilePanel === 'outline'} onOpenChange={(o) => !o && setMobilePanel(null)} title="Scenes" description={outlineStats}>
         <SceneNavigator outline={outline} currentId={currentHeading?.id} onJump={jump} className="-mx-5 -mt-4" />
       </Sheet>
+      )}
+      {mobilePanel === 'context' && (
       <Sheet open={mobilePanel === 'context'} onOpenChange={(o) => !o && setMobilePanel(null)} title={currentHeading?.text || 'Current scene'}>
         <div className="-mx-5 -my-5">
           <ContextPanel {...contextProps} />
         </div>
       </Sheet>
+      )}
 
+      {versionsOpen && (
       <VersionHistory
         open={versionsOpen}
         onOpenChange={setVersionsOpen}
@@ -437,7 +507,9 @@ function ScriptWorkspace({ project, script, scripts, openAssistant }: { project:
         onRestore={onRestore}
         onSaveVersion={() => setDialog('saveVersion')}
       />
+      )}
 
+      {dialog === 'newDraft' && (
       <NameDialog
         open={dialog === 'newDraft'}
         onOpenChange={(o) => !o && setDialog(null)}
@@ -450,6 +522,8 @@ function ScriptWorkspace({ project, script, scripts, openAssistant }: { project:
           await switchDraft(d.id);
         }}
       />
+      )}
+      {dialog === 'draftSettings' && (
       <DraftSettingsDialog
         open={dialog === 'draftSettings'}
         onOpenChange={(o) => !o && setDialog(null)}
@@ -461,6 +535,8 @@ function ScriptWorkspace({ project, script, scripts, openAssistant }: { project:
           toast('Draft updated');
         }}
       />
+      )}
+      {dialog === 'saveVersion' && (
       <SaveVersionDialog
         open={dialog === 'saveVersion'}
         onOpenChange={(o) => !o && setDialog(null)}
@@ -471,6 +547,8 @@ function ScriptWorkspace({ project, script, scripts, openAssistant }: { project:
           toast(`Saved version “${label}”`, { detail: 'Find it in version history.' });
         }}
       />
+      )}
+      {dialog === 'titlePage' && (
       <TitlePageDialog
         open={dialog === 'titlePage'}
         onOpenChange={(o) => !o && setDialog(null)}
@@ -480,6 +558,8 @@ function ScriptWorkspace({ project, script, scripts, openAssistant }: { project:
           toast('Title page saved');
         }}
       />
+      )}
+      {dialog === 'exportPdf' && (
       <ExportPdfDialog
         open={dialog === 'exportPdf'}
         onOpenChange={(o) => !o && setDialog(null)}
@@ -493,8 +573,9 @@ function ScriptWorkspace({ project, script, scripts, openAssistant }: { project:
           }
         }}
       />
-      <ImportDialog open={dialog === 'import'} onOpenChange={(o) => !o && setDialog(null)} onImport={onImport} />
-      <ShortcutsDialog open={dialog === 'shortcuts'} onOpenChange={(o) => !o && setDialog(null)} />
+      )}
+      {dialog === 'import' && <ImportDialog open onOpenChange={(o) => !o && setDialog(null)} onImport={onImport} />}
+      {dialog === 'shortcuts' && <ShortcutsDialog open onOpenChange={(o) => !o && setDialog(null)} />}
     </div>
   );
 }
