@@ -4,6 +4,8 @@
 
 SCENEFORGE runs entirely in your browser. Your projects are saved on your device as you work, with no account and no server.
 
+**Live:** https://sceneforge-2hi3.onrender.com (a static site on Render that redeploys on every push to this branch). Projects you create there are stored in your own browser, not on the server.
+
 ---
 
 ## Quick start
@@ -53,7 +55,7 @@ On first launch you can **start a new film**, **explore the sample film** (*The 
 
 | Feature | Requirement |
 | --- | --- |
-| **AI filmmaking assistant** (optional) | Your own Anthropic API key, entered in Settings. The key is stored only in this browser and sent only to `api.anthropic.com`; usage is billed to your Anthropic account. The core tools never depend on it. |
+| **AI filmmaking assistant** (optional) | Your own Anthropic API key, entered in Settings. The key is stored only in this browser and sent only to `api.anthropic.com`; usage is billed to your Anthropic account. The core tools never depend on it. Defaults to Claude Opus 5.5 (Sonnet 5.5 and Haiku 5.5 selectable). Server-side refusal fallbacks are enabled on Opus and Sonnet, so a declined request is retried on a fallback model instead of failing. The assistant reads your project (scenes, script, characters, shots, schedule, tasks) and can only *propose* changes: every proposal appears as a card marked "Suggestion — not applied" with a preview, and nothing changes until you press Apply. Applied suggestions can be undone; script revisions save a version first. |
 
 ### Not available in this build
 
