@@ -354,8 +354,8 @@ function ScenesTab({ character, scenes, numbers, speaks }: { character: Characte
         })}
       </ul>
       {others.length > 0 && (
-        <Field label="Add to another scene">
-          <Select value="" onChange={(e) => {
+        <Field label="Add to another scene" htmlFor="character-add-scene">
+          <Select id="character-add-scene" value="" onChange={(e) => {
             const s = scenes.find((x) => x.id === e.target.value);
             if (s) void setPresent(s, true);
           }}>

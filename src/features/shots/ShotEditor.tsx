@@ -170,8 +170,8 @@ export function ShotEditor({
           <AutoText label="Description" multiline rows={3} value={shot.description} placeholder="What the camera sees, e.g. Mara slides the key across the counter." onSave={(v) => save({ description: v })} />
 
           <div className="grid gap-4 sm:grid-cols-3">
-            <Field label="Shot type">
-              <Select value={shot.shotType} onChange={(e) => void save({ shotType: e.target.value as Shot['shotType'] })}>
+            <Field label="Shot type" htmlFor="shot-type">
+              <Select id="shot-type" value={shot.shotType} onChange={(e) => void save({ shotType: e.target.value as Shot['shotType'] })}>
                 {SHOT_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>
                     {t.label}
@@ -179,8 +179,8 @@ export function ShotEditor({
                 ))}
               </Select>
             </Field>
-            <Field label="Camera angle">
-              <Select value={shot.angle} onChange={(e) => void save({ angle: e.target.value as Shot['angle'] })}>
+            <Field label="Camera angle" htmlFor="shot-angle">
+              <Select id="shot-angle" value={shot.angle} onChange={(e) => void save({ angle: e.target.value as Shot['angle'] })}>
                 {CAMERA_ANGLES.map((t) => (
                   <option key={t.value} value={t.value}>
                     {t.label}
@@ -188,8 +188,8 @@ export function ShotEditor({
                 ))}
               </Select>
             </Field>
-            <Field label="Movement">
-              <Select value={shot.movement} onChange={(e) => void save({ movement: e.target.value as Shot['movement'] })}>
+            <Field label="Movement" htmlFor="shot-movement">
+              <Select id="shot-movement" value={shot.movement} onChange={(e) => void save({ movement: e.target.value as Shot['movement'] })}>
                 {CAMERA_MOVEMENTS.map((t) => (
                   <option key={t.value} value={t.value}>
                     {t.label}
@@ -219,8 +219,8 @@ export function ShotEditor({
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <AutoText label="Setup (min)" type="number" value={shot.setupMin?.toString() ?? ''} onSave={(v) => save({ setupMin: num(v) })} />
             <AutoText label="Filming (min)" type="number" value={shot.filmMin?.toString() ?? ''} onSave={(v) => save({ filmMin: num(v) })} />
-            <Field label="Priority">
-              <Select value={shot.priority} onChange={(e) => void save({ priority: e.target.value as ShotPriority })}>
+            <Field label="Priority" htmlFor="shot-priority">
+              <Select id="shot-priority" value={shot.priority} onChange={(e) => void save({ priority: e.target.value as ShotPriority })}>
                 {SHOT_PRIORITIES.map((p) => (
                   <option key={p.value} value={p.value}>
                     {p.label}
@@ -228,8 +228,8 @@ export function ShotEditor({
                 ))}
               </Select>
             </Field>
-            <Field label="Status">
-              <Select value={shot.status} onChange={(e) => void setShotStatus(shot, e.target.value as ShotStatus)}>
+            <Field label="Status" htmlFor="shot-status">
+              <Select id="shot-status" value={shot.status} onChange={(e) => void setShotStatus(shot, e.target.value as ShotStatus)}>
                 {SHOT_STATUSES.map((p) => (
                   <option key={p.value} value={p.value}>
                     {p.label}
@@ -242,6 +242,7 @@ export function ShotEditor({
           <div className="grid gap-4 sm:grid-cols-[1fr_120px]">
             <Field
               label="Filming day"
+              htmlFor="shot-day"
               hint={
                 currentDay
                   ? `Currently ${formatDate(currentDay.date)}${currentDay.startTime ? ` · ${formatTime(currentDay.startTime)}` : ''}`
@@ -250,7 +251,7 @@ export function ShotEditor({
                     : 'No filming days yet — add them in Schedule'
               }
             >
-              <Select value={shot.eventId ?? ''} onChange={(e) => void save({ eventId: e.target.value || undefined })}>
+              <Select id="shot-day" value={shot.eventId ?? ''} onChange={(e) => void save({ eventId: e.target.value || undefined })}>
                 <option value="">{autoDay ? `Follow scene (${formatDate(autoDay.date, 'EEE d MMM')})` : 'Follow scene’s filming day'}</option>
                 {filmingEvents.map((e) => (
                   <option key={e.id} value={e.id}>
@@ -356,8 +357,8 @@ function FramingField({ value, onSave }: { value: string; onSave: (v: string) =>
 function FrameRateField({ value, onSave }: { value: string; onSave: (v: string) => void }) {
   const custom = value && !FRAME_RATES.includes(value);
   return (
-    <Field label="Frame rate">
-      <Select value={custom ? '__custom' : value} onChange={(e) => onSave(e.target.value === '__custom' ? value || '' : e.target.value)}>
+    <Field label="Frame rate" htmlFor="shot-fps">
+      <Select id="shot-fps" value={custom ? '__custom' : value} onChange={(e) => onSave(e.target.value === '__custom' ? value || '' : e.target.value)}>
         {FRAME_RATES.map((r) => (
           <option key={r} value={r}>
             {r} fps

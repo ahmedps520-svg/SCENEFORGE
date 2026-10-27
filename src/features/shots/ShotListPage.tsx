@@ -914,8 +914,8 @@ function AddShotDialog({
         <Field label="Scene" error={error}>
           <SinglePicker value={sceneId} onChange={(v) => { setSceneId(v); setError(null); }} options={sceneOptions(scenes, numbers)} allowNone={false} placeholder="Choose a scene" />
         </Field>
-        <Field label="Shot type">
-          <Select value={shotType} onChange={(e) => setShotType(e.target.value as ShotType)}>
+        <Field label="Shot type" htmlFor="new-shot-type">
+          <Select id="new-shot-type" value={shotType} onChange={(e) => setShotType(e.target.value as ShotType)}>
             {SHOT_TYPES.map((t) => (
               <option key={t.value} value={t.value}>
                 {t.label}
@@ -923,8 +923,9 @@ function AddShotDialog({
             ))}
           </Select>
         </Field>
-        <Field label="Description" optional>
+        <Field label="Description" optional htmlFor="new-shot-desc">
           <Input
+            id="new-shot-desc"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="e.g. Wide of the diner as rain hits the window"

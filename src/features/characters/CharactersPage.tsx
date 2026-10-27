@@ -264,8 +264,9 @@ function CreateCharacterDialog({
       }
     >
       <div className="space-y-4">
-        <Field label="Name" error={error} hint="Use the name as it appears in character cues, e.g. Mara or Mr. Hale.">
+        <Field label="Name" htmlFor="new-character-name" error={error} hint="Use the name as it appears in character cues, e.g. Mara or Mr. Hale.">
           <Input
+            id="new-character-name"
             value={name}
             onChange={(e) => {
               setName(e.target.value);
@@ -276,8 +277,8 @@ function CreateCharacterDialog({
             onKeyDown={(e) => e.key === 'Enter' && void submit()}
           />
         </Field>
-        <Field label="Age or age range" optional>
-          <Input value={age} onChange={(e) => setAge(e.target.value)} placeholder="e.g. 30s" onKeyDown={(e) => e.key === 'Enter' && void submit()} />
+        <Field label="Age or age range" optional htmlFor="new-character-age">
+          <Input id="new-character-age" value={age} onChange={(e) => setAge(e.target.value)} placeholder="e.g. 30s" onKeyDown={(e) => e.key === 'Enter' && void submit()} />
         </Field>
       </div>
     </Dialog>

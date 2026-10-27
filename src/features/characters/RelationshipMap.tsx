@@ -269,11 +269,11 @@ function NewRelationshipDialog({ draft, names, onClose, onCreate }: { draft: { f
       }
     >
       <div className="space-y-4">
-        <Field label="Relationship" hint="How the first relates to the second, e.g. “older sister”, “owes money to”, “mentor”.">
-          <Input value={label} onChange={(e) => setLabel(e.target.value)} autoFocus placeholder="e.g. rival" onKeyDown={(e) => e.key === 'Enter' && void onCreate(label.trim(), description.trim())} />
+        <Field label="Relationship" htmlFor="new-rel-label" hint="How the first relates to the second, e.g. “older sister”, “owes money to”, “mentor”.">
+          <Input id="new-rel-label" value={label} onChange={(e) => setLabel(e.target.value)} autoFocus placeholder="e.g. rival" onKeyDown={(e) => e.key === 'Enter' && void onCreate(label.trim(), description.trim())} />
         </Field>
-        <Field label="Details" optional>
-          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="History, tension, what changes over the story…" />
+        <Field label="Details" optional htmlFor="new-rel-details">
+          <Textarea id="new-rel-details" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} placeholder="History, tension, what changes over the story…" />
         </Field>
       </div>
     </Dialog>
@@ -325,11 +325,11 @@ function EditRelationshipDialog({ relationship, names, onClose }: { relationship
       }
     >
       <div className="space-y-4">
-        <Field label="Relationship">
-          <Input value={label} onChange={(e) => setLabel(e.target.value)} autoFocus onKeyDown={(e) => e.key === 'Enter' && void save()} />
+        <Field label="Relationship" htmlFor="edit-rel-label">
+          <Input id="edit-rel-label" value={label} onChange={(e) => setLabel(e.target.value)} autoFocus onKeyDown={(e) => e.key === 'Enter' && void save()} />
         </Field>
-        <Field label="Details" optional>
-          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
+        <Field label="Details" optional htmlFor="edit-rel-details">
+          <Textarea id="edit-rel-details" value={description} onChange={(e) => setDescription(e.target.value)} rows={3} />
         </Field>
       </div>
     </Dialog>

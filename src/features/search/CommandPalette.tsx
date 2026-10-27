@@ -119,10 +119,10 @@ export default function CommandPalette({ open, onOpenChange }: { open: boolean; 
       navItems.push({ key: 'nav:present', title: 'Present pitch', subtitle: 'Full-screen pitch presentation', href: `/p/${projectId}/present/pitch`, icon: MonitorPlay });
     }
     navItems.push(
-      { key: 'nav:studio', title: 'Studio', subtitle: 'All your films', href: '/', icon: Home },
-      { key: 'nav:new', title: 'New film', subtitle: 'Start a new production', href: '/new', icon: Plus },
-      { key: 'nav:import', title: 'Import a screenplay', subtitle: 'Fountain or Final Draft', href: '/import', icon: FileUp },
-      { key: 'nav:settings', title: 'Settings', subtitle: 'Theme, editor, AI assistant, data', href: '/settings', icon: Settings },
+      { key: 'app:studio', title: 'Studio', subtitle: 'All your films', href: '/', icon: Home },
+      { key: 'app:new', title: 'New film', subtitle: 'Start a new production', href: '/new', icon: Plus },
+      { key: 'app:import', title: 'Import a screenplay', subtitle: 'Fountain or Final Draft', href: '/import', icon: FileUp },
+      { key: 'app:settings', title: 'App settings', subtitle: 'Theme, editor, AI assistant, data', href: '/settings', icon: Settings },
     );
 
     if (!terms.length) {
