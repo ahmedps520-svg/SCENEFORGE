@@ -360,7 +360,7 @@ export const Toolbar = memo(function Toolbar({
               Scene numbers
             </MenuItem>
             <MenuSeparator />
-            <MenuLabel>{statsFull}</MenuLabel>
+            <MenuLabel>{statsShort}</MenuLabel>
           </Menu>
         </div>
       </div>

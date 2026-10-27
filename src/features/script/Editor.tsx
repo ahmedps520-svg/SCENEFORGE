@@ -92,6 +92,17 @@ function HighlightLayer({ text, highlights }: { text: string; highlights: Highli
 
 const CHUNK = 48;
 
+const SHORT_LABEL: Record<ScriptElement['type'], string> = {
+  scene: 'Heading',
+  action: 'Action',
+  character: 'Character',
+  parenthetical: 'Paren.',
+  dialogue: 'Dialogue',
+  transition: 'Transition',
+  shot: 'Shot',
+  centered: 'Centered',
+};
+
 interface ChunkProps {
   els: ScriptElement[];
   numbers: Map<string, string>;
@@ -206,9 +217,9 @@ export const Editor = memo(function Editor({
             {chunks.map((els, i) => (
               <Chunk key={i} els={els} numbers={numbers} breaks={breaks} highlights={highlights} showNumbers={showSceneNumbers} handlers={handlers} />
             ))}
-            {typeTop !== null && focusedEl && (
+            {typeTop !== null && focusedEl && focusedEl.type !== 'scene' && (
               <span className="sf-type" style={{ top: typeTop }} aria-hidden>
-                {elementLabel(focusedEl.type)}
+                {SHORT_LABEL[focusedEl.type]}
               </span>
             )}
             {acPos && suggestions.length > 0 && focusedEl && (

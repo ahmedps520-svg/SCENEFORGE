@@ -118,7 +118,7 @@
 /* Element type shown in the margin beside the line being edited. */
 .sf-type {
   position: absolute;
-  right: calc(100% + 4.2em);
+  left: calc(-1 * var(--sf-pad) + 12px);
   font: 500 9.5px/1.2 var(--font-mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
