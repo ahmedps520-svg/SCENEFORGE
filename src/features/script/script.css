@@ -1,0 +1,211 @@
+/* Screenplay page. Indents are in `ch` of Courier Prime so they match print exactly. */
+.sf-paper {
+  --sf-ink: #ece6da;
+  --sf-muted: rgb(236 230 218 / 0.55);
+  --sf-faint: rgb(236 230 218 / 0.3);
+  --sf-bg: #141416;
+  --sf-line: rgb(255 255 255 / 0.08);
+  --sf-pad: 92px;
+  --s: 1;
+  font-family: var(--font-script);
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--sf-ink);
+}
+.sf-paper[data-paper='light'] {
+  --sf-ink: #1a1814;
+  --sf-muted: rgb(26 24 20 / 0.55);
+  --sf-faint: rgb(26 24 20 / 0.3);
+  --sf-bg: #fdfcf8;
+  --sf-line: rgb(0 0 0 / 0.1);
+}
+.sf-sheet {
+  position: relative;
+  background: var(--sf-bg);
+  max-width: calc(61ch + 2 * var(--sf-pad));
+  margin: 28px auto 64px;
+  padding: 72px var(--sf-pad) 160px;
+  border: 1px solid var(--sf-line);
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.2), 0 24px 60px -30px rgb(0 0 0 / 0.55);
+}
+@media (max-width: 640px) {
+  .sf-paper {
+    font-size: 14px;
+    --sf-pad: 18px;
+    --s: 0.45;
+  }
+  .sf-sheet {
+    margin: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    padding-top: 28px;
+  }
+}
+.sf-col {
+  position: relative;
+  width: 61ch;
+  max-width: 100%;
+  margin: 0 auto;
+}
+.sf-row {
+  position: relative;
+}
+.sf-scene {
+  margin-top: 2.9em;
+  font-weight: 700;
+}
+.sf-action,
+.sf-character,
+.sf-transition,
+.sf-shot,
+.sf-centered {
+  margin-top: 1.45em;
+}
+.sf-col > .sf-row:first-child,
+.sf-col > .sf-break + .sf-row,
+.sf-static > .sf-row:first-child {
+  margin-top: 0;
+}
+.sf-character .sf-block {
+  margin-left: calc(22ch * var(--s));
+  max-width: 38ch;
+}
+.sf-parenthetical .sf-block {
+  margin-left: calc(16ch * var(--s));
+  max-width: 25ch;
+}
+.sf-dialogue .sf-block {
+  margin-left: calc(10ch * var(--s));
+  max-width: 35ch;
+}
+.sf-transition .sf-block {
+  text-align: right;
+}
+.sf-centered .sf-block {
+  text-align: center;
+}
+.sf-block > textarea {
+  display: block;
+  width: 100%;
+  background: transparent;
+  color: inherit;
+  outline: none;
+  caret-color: var(--c-accent);
+  position: relative;
+  z-index: 1;
+  text-align: inherit;
+}
+.sf-block::after {
+  text-align: inherit;
+}
+.sf-row textarea::placeholder {
+  color: transparent;
+}
+.sf-row textarea:focus::placeholder,
+.sf-paper[data-empty] .sf-row textarea::placeholder {
+  color: var(--sf-faint);
+}
+/* Element type shown in the margin beside the line being edited. */
+.sf-row::before {
+  content: attr(data-label);
+  position: absolute;
+  right: calc(100% + 4.2em);
+  top: 0.35em;
+  font: 500 9.5px/1.2 var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sf-faint);
+  opacity: 0;
+  transition: opacity 0.15s;
+  white-space: nowrap;
+  pointer-events: none;
+}
+.sf-row:focus-within::before {
+  opacity: 1;
+}
+.sf-num {
+  position: absolute;
+  top: 0;
+  color: var(--sf-muted);
+  font-weight: 700;
+  user-select: none;
+}
+.sf-num-l {
+  right: calc(100% + 1.4em);
+}
+.sf-num-r {
+  left: calc(100% + 1.4em);
+}
+@media (max-width: 1100px) {
+  .sf-row::before {
+    display: none;
+  }
+}
+@media (max-width: 640px) {
+  .sf-num-r {
+    display: none;
+  }
+  .sf-num-l {
+    right: auto;
+    left: -0.2em;
+    top: -1.35em;
+    font-size: 10px;
+    font-family: var(--font-mono);
+  }
+}
+.sf-break {
+  position: relative;
+  margin: 2.4em calc(-1 * var(--sf-pad)) 2em;
+  border-top: 1px dashed var(--sf-line);
+}
+.sf-break > span {
+  position: absolute;
+  right: calc(var(--sf-pad) - 0.6em);
+  top: -0.8em;
+  padding: 0 0.6em;
+  background: var(--sf-bg);
+  font: 500 10px/1.6 var(--font-mono);
+  letter-spacing: 0.12em;
+  color: var(--sf-faint);
+}
+/* Search highlights sit behind the transparent textarea text. */
+.sf-hl {
+  grid-area: 1 / 1 / 2 / 2;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: transparent;
+  pointer-events: none;
+  user-select: none;
+  font: inherit;
+  text-align: inherit;
+}
+.sf-hl mark {
+  color: transparent;
+  background: color-mix(in srgb, var(--c-accent) 26%, transparent);
+  border-radius: 2px;
+}
+.sf-hl mark.cur {
+  background: color-mix(in srgb, var(--c-accent) 62%, transparent);
+  outline: 1px solid var(--c-accent);
+}
+/* Static rendering (previews and comparisons). */
+.sf-static .sf-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sf-static .sf-row {
+  border-radius: 2px;
+}
+.sf-static .sf-added {
+  background: color-mix(in srgb, var(--c-success) 16%, transparent);
+  box-shadow: -6px 0 0 color-mix(in srgb, var(--c-success) 16%, transparent), 6px 0 0 color-mix(in srgb, var(--c-success) 16%, transparent);
+}
+.sf-static .sf-removed {
+  background: color-mix(in srgb, var(--c-danger) 14%, transparent);
+  box-shadow: -6px 0 0 color-mix(in srgb, var(--c-danger) 14%, transparent), 6px 0 0 color-mix(in srgb, var(--c-danger) 14%, transparent);
+  text-decoration: line-through;
+  text-decoration-color: color-mix(in srgb, var(--c-danger) 70%, transparent);
+  opacity: 0.75;
+}

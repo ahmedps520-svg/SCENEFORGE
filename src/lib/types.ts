@@ -471,6 +471,8 @@ export interface Proposal {
   createdRecords?: { table: string; id: ID }[];
   /** Script version saved before a script change was applied. */
   backupVersionId?: ID;
+  /** Field values replaced when an update was applied, so it can be undone. */
+  previous?: { table: string; id: ID; values: Record<string, unknown> }[];
 }
 
 export interface AssistantTurn {
@@ -481,6 +483,8 @@ export interface AssistantTurn {
   /** What the user had selected when asking. */
   focus?: { type: 'scene' | 'character'; id: ID; label: string };
   error?: string;
+  /** Non-error status, e.g. "Stopped." or a refusal note. */
+  notice?: string;
   at: number;
 }
 
